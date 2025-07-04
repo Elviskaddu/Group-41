@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uganda  Misuse Alerts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #FF7900;
+            --primary-dark: #E06C00;
+            --secondary-color: #003366;
+            --light-gray: #f5f5f5;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #757575;
+            --error-color: #e53e3e;
+            --success-color: #38a169;
+            --warning-color: #dd6b20;
+            --police-blue: #2a5c8d;
+            --hospital-green: #2d8d5a;
+            --firefighter-red: #c52a2a;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--light-gray);
+            color: var(--secondary-color);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        /* Role Selection Screen */
+        .role-selection-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .role-selection-container h1 {
+            color: white;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .role-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .role-btn {
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 1rem;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-btn:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .access-code-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1rem;
+            box-shadow: var(--card-shadow);
+            display: none;
+        }
+
+        .access-code-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--medium-gray);
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .access-code-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .access-code-submit {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .access-code-submit:hover {
+            background-color: #0f172a;
+        }
+
+        .access-code-error {
+            color: var(--error-color);
+            margin-top: 1rem;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        /* Main App Structure */
+        .app-header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            height: 100%;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Report Form Styles */
+        .report-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 1.75rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, 
+        .form-group textarea:focus, 
+        .form-group select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .incident-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .incident-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0.5rem;
+            background-color: white;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            min-height: 100px;
+        }
+
+        .incident-btn:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .incident-btn.active {
+            border-color: var(--primary-color);
+            background-color: rgba(255, 121, 0, 0.1);
+        }
+
+        .severity-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 5px;
+        }
+
+        .high-severity {
+            background-color: var(--error-color);
+        }
+
+        .medium-severity {
+            background-color: var(--warning-color);
+        }
+
+        .low-severity {
+            background-color: var(--success-color);
+        }
+
+        .location-map {
+            height: 200px;
+            width: 100%;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Reports List Styles */
+        .reports-list, .admin-reports-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .report-card, .admin-report-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .report-card:hover, .admin-report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .report-card.solved, .admin-report-card.solved {
+            opacity: 0.9;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .report-type {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .report-time {
+            color: var(--dark-gray);
+            font-size: 0.8rem;
+        }
+
+        .report-description {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+            color: var(--secondary-color);
+        }
+
+        .report-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .report-location {
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .report-location:hover {
+            color: var(--primary-dark);
+        }
+
+        .report-votes {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .vote-btn {
+            background: none;
+            border: none;
+            color: var(--dark-gray);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: color 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .vote-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .vote-btn.active {
+            color: var(--primary-color);
+        }
+
+        /* Admin Dashboard Styles */
+        .admin-dashboard {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 1.75rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .admin-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .admin-type-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .admin-type-btn {
+            flex: 1;
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .admin-type-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-type-btn.active {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.1);
+        }
+
+        .admin-type-btn.police.active {
+            border-color: var(--police-blue);
+            background-color: rgba(30, 64, 175, 0.1);
+        }
+
+        .admin-type-btn.hospital.active {
+            border-color: var(--hospital-green);
+            background-color: rgba(22, 101, 52, 0.1);
+        }
+
+        .admin-type-btn.firefighter.active {
+            border-color: var(--firefighter-red);
+            background-color: rgba(153, 27, 27, 0.1);
+        }
+
+        .admin-type-btn i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .admin-type-btn.police i {
+            color: var(--police-blue);
+        }
+
+        .admin-type-btn.hospital i {
+            color: var(--hospital-green);
+        }
+
+        .admin-type-btn.firefighter i {
+            color: var(--firefighter-red);
+        }
+
+        .admin-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .police-badge {
+            background-color: var(--police-blue);
+            color: white;
+        }
+
+        .hospital-badge {
+            background-color: var(--hospital-green);
+            color: white;
+        }
+
+        .firefighter-badge {
+            background-color: var(--firefighter-red);
+            color: white;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--secondary-color);
+            border: 1px solid var(--medium-gray);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(30, 41, 59, 0.05);
+            border-color: var(--secondary-color);
+        }
+
+        .solve-btn {
+            background-color: var(--success-color) !important;
+            color: white !important;
+            border-color: var(--success-color) !important;
+        }
+
+        .solve-btn:hover {
+            background-color: #15803d !important;
+        }
+
+        .delete-btn {
+            background-color: var(--error-color) !important;
+            color: white !important;
+            border-color: var(--error-color) !important;
+        }
+
+        .delete-btn:hover {
+            background-color: #b91c1c !important;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: white;
+            padding: 0.75rem 0;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            color: var(--dark-gray);
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            width: 100%;
+        }
+
+        .nav-btn.active {
+            color: var(--primary-color);
+        }
+
+        .nav-btn .icon {
+            margin-bottom: 0.25rem;
+            font-size: 1.25rem;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none;
+        }
+
+        .modal-container {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            background-color: var(--secondary-color);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-weight: 500;
+            font-size: 1.25rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        #modal-map {
+            height: 400px;
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        /* Empty state styles */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--dark-gray);
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--medium-gray);
+        }
+
+        .empty-state h3 {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* Error and success messages */
+        .error-message {
+            color: var(--error-color);
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        /* Role-specific styles */
+        .reporter-view .admin-nav-btn {
+            display: none !important;
+        }
+
+        .admin-view .reporter-nav-btn {
+            display: none !important;
+        }
+
+        .admin-view .bottom-nav {
+            display: none;
+        }
+
+        .admin-view .app-header {
+            padding: 1rem 1.5rem;
+        }
+
+        .admin-view .back-to-dashboard {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .admin-view .logout-btn {
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .admin-type-selector {
+                flex-direction: column;
+            }
+            
+            .report-actions {
+                flex-direction: column;
+            }
+            
+            .admin-actions {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .incident-types {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .app-header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .role-options {
+                width: 90%;
+            }
+            
+            .access-code-container {
+                width: 90%;
+            }
+            
+            .report-form {
+                padding: 1.25rem;
+            }
+            
+            .admin-login-form, 
+            .admin-dashboard, 
+            .admin-signup-form {
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Role Selection Screen -->
+    <div class="role-selection-container" id="role-selection">
+        <h1>Uganda Traffic Alerts</h1>
+        <div class="role-options">
+            <button class="role-btn" id="reporter-btn">
+                <i class="fas fa-user"></i>
+                Continue as Reporter
+            </button>
+            <button class="role-btn" id="admin-btn">
+                <i class="fas fa-shield-alt"></i>
+                Continue as Admin
+            </button>
+        </div>
+        <div class="access-code-container" id="access-code-container">
+            <h2>Admin Access Required</h2>
+            <input type="password" class="access-code-input" id="access-code-input" placeholder="Enter access code">
+            <button class="access-code-submit" id="access-code-submit">Verify</button>
+            <div class="access-code-error" id="access-code-error">
+                Invalid access code. Please try again.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="app-container" style="display: none;">
+        <header class="app-header">
+            <h1>Uganda Traffic Alerts</h1>
+            <div class="header-actions" id="header-actions" style="display: none;">
+                <button class="logout-btn" id="admin-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <main class="app-content" id="app-content">
+            <!-- Home Screen -->
+            <section id="home-screen" class="screen active">
+                <div class="reports-list" id="reports-list">
+                    <!-- Reports will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Report Screen -->
+            <section id="report-screen" class="screen">
+                <div class="report-form">
+                    <h2>Report Road Misuse</h2>
+                    <div class="form-group">
+                        <label for="reporter-name">Your Name (Optional)</label>
+                        <input type="text" id="reporter-name" placeholder="John Doe">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Incident Type</label>
+                        <div class="incident-types">
+                            <!-- Road Accidents -->
+                            <button class="incident-btn" data-type="vehicle-collision" data-severity="high">
+                                <i class="fas fa-car-crash"></i>
+                                <span>Vehicle Collision</span>
+                                <div class="severity-indicator high-severity"></div>
+                            </button>
+                            
+                            <button class="incident-btn" data-type="hit-and-run" data-severity="high">
+                                <i class="fas fa-running"></i>
+                                <span>Hit & Run</span>
+                                <div class="severity-indicator high-severity"></div>
+                            </button>
+                            
+                            <!-- Traffic Jams -->
+                            <button class="incident-btn" data-type="traffic-jam" data-severity="medium">
+                                <i class="fas fa-traffic-light"></i>
+                                <span>Traffic Jam</span>
+                                <div class="severity-indicator medium-severity"></div>
+                            </button>
+                            
+                            <!-- Roadblocks -->
+                            <button class="incident-btn" data-type="illegal-checkpoint" data-severity="medium">
+                                <i class="fas fa-road-barrier"></i>
+                                <span>Illegal Checkpoint</span>
+                                <div class="severity-indicator medium-severity"></div>
+                            </button>
+                            
+                            <!-- Reckless Driving -->
+                            <button class="incident-btn" data-type="reckless-driving" data-severity="high">
+                                <i class="fas fa-car-burst"></i>
+                                <span>Reckless Driving</span>
+                                <div class="severity-indicator high-severity"></div>
+                            </button>
+                            
+                            <button class="incident-btn" data-type="drunk-driving" data-severity="high">
+                                <i class="fas fa-wine-glass"></i>
+                                <span>Drunk Driving</span>
+                                <div class="severity-indicator high-severity"></div>
+                            </button>
+                            
+                            <!-- Infrastructure Issues -->
+                            <button class="incident-btn" data-type="faulty-traffic-light" data-severity="medium">
+                                <i class="fas fa-traffic-light"></i>
+                                <span>Faulty Traffic Light</span>
+                                <div class="severity-indicator medium-severity"></div>
+                            </button>
+                            
+                            <button class="incident-btn" data-type="road-sign-damage" data-severity="low">
+                                <i class="fas fa-sign"></i>
+                                <span>Damaged Road Sign</span>
+                                <div class="severity-indicator low-severity"></div>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="incident-description">Description</label>
+                        <textarea id="incident-description" placeholder="Provide details about the incident..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Location</label>
+                        <div id="location-map" class="location-map"></div>
+                        <p id="location-text">Tap on the map to select location</p>
+                    </div>
+                    
+                    <button id="submit-report" class="btn-primary">Submit Report</button>
+                </div>
+            </section>
+
+            <!-- Admin Login Screen -->
+            <section id="admin-login-screen" class="screen">
+                <div class="admin-login-form">
+                    <h2>Emergency Services Login</h2>
+                    <div class="form-group">
+                        <label for="admin-email">Email</label>
+                        <input type="email" id="admin-email" placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-password">Password</label>
+                        <input type="password" id="admin-password" placeholder="Password">
+                    </div>
+                    <button id="admin-login-btn" class="btn-primary">Login</button>
+                    <p id="admin-login-error" class="error-message"></p>
+                    <p style="text-align: center; margin-top: 1rem;">
+                        Don't have an account? <a href="#" id="show-signup">Register here</a>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Admin Signup Screen -->
+            <section id="admin-signup-screen" class="screen">
+                <div class="admin-signup-form">
+                    <h2>Emergency Services Registration</h2>
+                    <div class="form-group">
+                        <label>Service Type</label>
+                        <div class="admin-type-selector">
+                            <div class="admin-type-btn police" data-type="police">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Police</span>
+                            </div>
+                            <div class="admin-type-btn hospital" data-type="hospital">
+                                <i class="fas fa-hospital"></i>
+                                <span>Hospital</span>
+                            </div>
+                            <div class="admin-type-btn firefighter" data-type="firefighter">
+                                <i class="fas fa-fire-extinguisher"></i>
+                                <span>Firefighter</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" placeholder="Your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email</label>
+                        <input type="email" id="signup-email" placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password (min 6 characters)</label>
+                        <input type="password" id="signup-password" placeholder="Password">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-badge">Official ID/Badge Number</label>
+                        <input type="text" id="signup-badge" placeholder="Your official identification number">
+                    </div>
+                    <button id="admin-signup-btn" class="btn-primary">Register</button>
+                    <p id="admin-signup-error" class="error-message"></p>
+                    <p id="admin-signup-success" class="success-message"></p>
+                    <p style="text-align: center; margin-top: 1rem;">
+                        Already have an account? <a href="#" id="show-login">Login here</a>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Admin Dashboard Screen -->
+            <section id="admin-dashboard-screen" class="screen">
+                <div class="admin-dashboard">
+                    <h2>Emergency Services Dashboard <span id="admin-type-badge" class="admin-badge"></span></h2>
+                    <div id="admin-welcome" style="margin-bottom: 1.5rem; text-align: center;"></div>
+                    
+                    <div class="admin-actions">
+                        <button class="btn-secondary" id="refresh-reports-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="admin-reports-list" id="admin-reports-list">
+                        <!-- Admin reports will be loaded here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav reporter-view">
+            <button class="nav-btn reporter-nav-btn active" data-screen="home-screen">
+                <i class="icon fas fa-home"></i>
+                <span>Home</span>
+            </button>
+            <button class="nav-btn reporter-nav-btn" data-screen="report-screen">
+                <i class="icon fas fa-plus-circle"></i>
+                <span>Report</span>
+            </button>
+        </nav>
+        
+        <!-- Bottom Navigation (Admin only - hidden by default) -->
+        <nav class="bottom-nav admin-view" style="display: none;">
+            <button class="nav-btn admin-nav-btn active" data-screen="admin-dashboard-screen">
+                <i class="icon fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </button>
+        </nav>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+    
+    <!-- Map Modal -->
+    <div class="modal-overlay" id="map-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Report Location</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-map"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbZPZDQRkyD4dcfzSg0ZQpweIrN1PALaA",
+            authDomain: "notification-system-1658a.firebaseapp.com",
+            databaseURL: "https://notification-system-1658a-default-rtdb.firebaseio.com",
+            projectId: "notification-system-1658a",
+            storageBucket: "notification-system-1658a.firebasestorage.app",
+            messagingSenderId: "129866394387",
+            appId: "1:129866394387:web:61295af4c0c251779a88e6",
+            measurementId: "G-SDDVWLZ9F1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // Constants
+        const ADMIN_ACCESS_CODE = "UGANDA124";
+
+        // DOM Elements
+        const roleSelection = document.getElementById('role-selection');
+        const appContainer = document.getElementById('app-container');
+        const reporterBtn = document.getElementById('reporter-btn');
+        const adminBtn = document.getElementById('admin-btn');
+        const accessCodeContainer = document.getElementById('access-code-container');
+        const accessCodeInput = document.getElementById('access-code-input');
+        const accessCodeSubmit = document.getElementById('access-code-submit');
+        const accessCodeError = document.getElementById('access-code-error');
+        
+        // Report Form Elements
+        const incidentButtons = document.querySelectorAll('.incident-btn');
+        const submitReportBtn = document.getElementById('submit-report');
+        
+        // Admin Elements
+        const adminLoginBtn = document.getElementById('admin-login-btn');
+        const adminSignupBtn = document.getElementById('admin-signup-btn');
+        const adminLogoutBtn = document.getElementById('admin-logout-btn');
+        const refreshReportsBtn = document.getElementById('refresh-reports-btn');
+        
+        // App State
+        let currentScreen = 'home-screen';
+        let selectedIncidentType = null;
+        let selectedLocation = null;
+        let selectedAdminType = null;
+        let map = null;
+        let marker = null;
+        let currentAdminUser = null;
+        let currentRole = null; // 'reporter' or 'admin'
+
+        // Initialize the app
+        function initApp() {
+            setupRoleSelection();
+            setupReportForm();
+            setupNavigation();
+            setupAdminAuth();
+            setupMapModal();
+            loadReports();
+        }
+
+        // Set up role selection with access code
+        function setupRoleSelection() {
+            reporterBtn.addEventListener('click', () => {
+                // Set current role
+                currentRole = 'reporter';
+                document.body.classList.add('reporter-view');
+                document.body.classList.remove('admin-view');
+                
+                // Hide role selection and show app
+                roleSelection.style.display = 'none';
+                appContainer.style.display = 'flex';
+                
+                // Show reporter navigation
+                document.querySelector('.bottom-nav.reporter-view').style.display = 'flex';
+                document.querySelector('.bottom-nav.admin-view').style.display = 'none';
+                
+                // Show home screen
+                showScreen('home-screen');
+            });
+
+            adminBtn.addEventListener('click', () => {
+                // Show access code input
+                accessCodeContainer.style.display = 'block';
+            });
+
+            accessCodeSubmit.addEventListener('click', verifyAccessCode);
+            
+            accessCodeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    verifyAccessCode();
+                }
+            });
+        }
+
+        // Verify admin access code
+        function verifyAccessCode() {
+            const enteredCode = accessCodeInput.value.trim();
+            
+            if (enteredCode === ADMIN_ACCESS_CODE) {
+                // Set current role
+                currentRole = 'admin';
+                document.body.classList.add('admin-view');
+                document.body.classList.remove('reporter-view');
+                
+                // Correct code - hide role selection and show app
+                roleSelection.style.display = 'none';
+                appContainer.style.display = 'flex';
+                
+                // Show admin navigation
+                document.querySelector('.bottom-nav.reporter-view').style.display = 'none';
+                document.querySelector('.bottom-nav.admin-view').style.display = 'flex';
+                
+                // Show admin login screen
+                showScreen('admin-login-screen');
+                
+                // Clear and hide access code elements
+                accessCodeInput.value = '';
+                accessCodeError.style.display = 'none';
+                accessCodeContainer.style.display = 'none';
+            } else {
+                // Incorrect code - show error
+                accessCodeError.style.display = 'block';
+            }
+        }
+
+        // Set up report form
+        function setupReportForm() {
+            // Incident type selection
+            incidentButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    incidentButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    selectedIncidentType = button.getAttribute('data-type');
+                });
+            });
+
+            // Initialize map when report screen is shown
+            document.getElementById('report-screen').addEventListener('click', function() {
+                if (!map) initMap();
+            });
+
+            // Form submission
+            submitReportBtn.addEventListener('click', submitReport);
+        }
+
+        // Initialize map
+        function initMap() {
+            // Default to Kampala coordinates
+            const defaultLat = 0.3136;
+            const defaultLng = 32.5811;
+            
+            map = L.map('location-map').setView([defaultLat, defaultLng], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Add click event to map
+            map.on('click', onMapClick);
+            
+            // Add initial marker
+            marker = L.marker([defaultLat, defaultLng], {
+                draggable: true
+            }).addTo(map);
+            
+            selectedLocation = { lat: defaultLat, lng: defaultLng };
+            updateLocationText(defaultLat, defaultLng);
+            
+            // Update location when marker is dragged
+            marker.on('dragend', function() {
+                const newLatLng = marker.getLatLng();
+                selectedLocation = { lat: newLatLng.lat, lng: newLatLng.lng };
+                updateLocationText(newLatLng.lat, newLatLng.lng);
+            });
+        }
+
+        // Handle map click
+        function onMapClick(e) {
+            if (!marker) {
+                marker = L.marker(e.latlng, { draggable: true }).addTo(map);
+            } else {
+                marker.setLatLng(e.latlng);
+            }
+            
+            selectedLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
+            updateLocationText(e.latlng.lat, e.latlng.lng);
+        }
+
+        // Update location text
+        function updateLocationText(lat, lng) {
+            document.getElementById('location-text').textContent = 
+                `Location: Latitude ${lat.toFixed(4)}, Longitude ${lng.toFixed(4)}`;
+        }
+
+        // Submit report
+        function submitReport() {
+            if (!selectedIncidentType) {
+                alert('Please select an incident type');
+                return;
+            }
+            
+            const description = document.getElementById('incident-description').value.trim();
+            if (!description) {
+                alert('Please provide a description of the incident');
+                return;
+            }
+            
+            if (!selectedLocation) {
+                alert('Please select a location on the map');
+                return;
+            }
+            
+            showLoading(true);
+            
+            const reportData = {
+                type: selectedIncidentType,
+                description: description,
+                reporterName: document.getElementById('reporter-name').value.trim() || 'Anonymous',
+                location: selectedLocation,
+                timestamp: new Date().toISOString(),
+                status: 'reported',
+                severity: document.querySelector('.incident-btn.active').getAttribute('data-severity'),
+                votes: 0,
+                voters: {}
+            };
+            
+            // Push report to Firebase
+            database.ref('reports').push(reportData)
+                .then(() => {
+                    alert('Report submitted successfully!');
+                    resetForm();
+                    showScreen('home-screen');
+                    loadReports();
+                })
+                .catch(error => {
+                    console.error('Error submitting report:', error);
+                    alert('Failed to submit report. Please try again.');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        // Reset form
+        function resetForm() {
+            incidentButtons.forEach(btn => btn.classList.remove('active'));
+            document.getElementById('incident-description').value = '';
+            document.getElementById('reporter-name').value = '';
+            selectedIncidentType = null;
+        }
+
+        // Load reports
+        function loadReports() {
+            showLoading(true);
+            
+            database.ref('reports').orderByChild('timestamp').limitToLast(50).once('value')
+                .then(snapshot => {
+                    const reportsList = currentScreen === 'home-screen' ? 
+                        document.getElementById('reports-list') : 
+                        document.getElementById('admin-reports-list');
+                    
+                    reportsList.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        reportsList.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <h3>No Reports Available</h3>
+                                <p>No traffic incidents have been reported yet</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const reports = [];
+                    snapshot.forEach(childSnapshot => {
+                        reports.push({
+                            id: childSnapshot.key,
+                            ...childSnapshot.val()
+                        });
+                    });
+                    
+                    // Sort by timestamp (newest first)
+                    reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    // Display reports
+                    reports.forEach(report => {
+                        const reportElement = currentScreen === 'home-screen' ? 
+                            createPublicReportElement(report) : 
+                            createAdminReportElement(report);
+                        reportsList.appendChild(reportElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading reports:', error);
+                    const reportsList = currentScreen === 'home-screen' ? 
+                        document.getElementById('reports-list') : 
+                        document.getElementById('admin-reports-list');
+                    reportsList.innerHTML = '<p class="error-message">Failed to load reports</p>';
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        // Create public report element
+        function createPublicReportElement(report) {
+            const element = document.createElement('div');
+            element.className = 'report-card';
+            if (report.status === 'solved') element.classList.add('solved');
+            
+            const icon = getIncidentIcon(report.type);
+            const date = new Date(report.timestamp);
+            const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateString = date.toLocaleDateString();
+            
+            // Add solved info if applicable
+            let solvedInfo = '';
+            if (report.status === 'solved') {
+                const solvedDate = report.solvedAt ? new Date(report.solvedAt).toLocaleString() : 'Unknown time';
+                solvedInfo = `<div class="solved-info" style="color: var(--success-color); font-size: 0.8rem; margin-top: 0.5rem;">
+                    <i class="fas fa-check-circle"></i> Resolved by ${report.solvedBy || 'official'} on ${solvedDate}
+                </div>`;
+            }
+            
+            element.innerHTML = `
+                <div class="report-header">
+                    <div class="report-type">
+                        <i class="fas ${icon}"></i>
+                        <span>${formatIncidentType(report.type)}</span>
+                    </div>
+                    <div class="report-time">${dateString} ${timeString}</div>
+                </div>
+                <div class="report-description">${report.description || 'No description provided'}</div>
+                <div class="report-footer">
+                    <div class="report-location" data-lat="${report.location.lat}" data-lng="${report.location.lng}">
+                        <i class="fas fa-map-marker-alt"></i> View Location
+                    </div>
+                    <div class="report-votes">
+                        <button class="vote-btn" data-report-id="${report.id}">
+                            <i class="fas fa-thumbs-up"></i>
+                            <span>${report.votes || 0}</span>
+                        </button>
+                    </div>
+                </div>
+                ${solvedInfo}
+            `;
+            
+            // Add vote event listener
+            const voteBtn = element.querySelector('.vote-btn');
+            if (voteBtn) {
+                voteBtn.addEventListener('click', () => upvoteReport(report.id));
+            }
+            
+            // Add location click event
+            const locationBtn = element.querySelector('.report-location');
+            if (locationBtn) {
+                locationBtn.addEventListener('click', () => showLocationOnMap(report.location.lat, report.location.lng));
+            }
+            
+            return element;
+        }
+
+        // Create admin report element
+        function createAdminReportElement(report) {
+            const element = document.createElement('div');
+            element.className = 'admin-report-card';
+            if (report.status === 'solved') element.classList.add('solved');
+            
+            const icon = getIncidentIcon(report.type);
+            const date = new Date(report.timestamp);
+            const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateString = date.toLocaleDateString();
+            
+            // Add solved info if applicable
+            let solvedInfo = '';
+            if (report.status === 'solved') {
+                const solvedDate = report.solvedAt ? new Date(report.solvedAt).toLocaleString() : 'Unknown time';
+                solvedInfo = `<div class="solved-info" style="color: var(--success-color); font-size: 0.8rem; margin-top: 0.5rem;">
+                    <i class="fas fa-check-circle"></i> Resolved by ${report.solvedBy || 'official'} on ${solvedDate}
+                </div>`;
+            }
+            
+            // Create action buttons based on report status
+            let actionButtons = '';
+            if (!report.solved) {
+                actionButtons = `
+                    <button class="btn-secondary solve-btn" data-report-id="${report.id}">
+                        <i class="fas fa-check"></i> Mark Solved
+                    </button>
+                `;
+            }
+            
+            element.innerHTML = `
+                <div class="report-header">
+                    <div class="report-type">
+                        <i class="fas ${icon}"></i>
+                        <span>${formatIncidentType(report.type)}</span>
+                        <span class="severity-indicator ${report.severity}-severity"></span>
+                    </div>
+                    <div class="report-time">${dateString} ${timeString}</div>
+                </div>
+                <div class="report-description">${report.description || 'No description provided'}</div>
+                <div class="report-footer">
+                    <div class="report-location" data-lat="${report.location.lat}" data-lng="${report.location.lng}">
+                        <i class="fas fa-map-marker-alt"></i> View Location
+                    </div>
+                    <div class="report-actions">
+                        ${actionButtons}
+                        <button class="btn-secondary delete-btn" data-report-id="${report.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                ${solvedInfo}
+            `;
+            
+            // Add event listeners for admin actions
+            const solveBtn = element.querySelector('.solve-btn');
+            if (solveBtn) {
+                solveBtn.addEventListener('click', () => markReportAsSolved(report.id));
+            }
+            
+            const deleteBtn = element.querySelector('.delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => deleteReport(report.id));
+            }
+            
+            // Add click event for location
+            const locationBtn = element.querySelector('.report-location');
+            if (locationBtn) {
+                locationBtn.addEventListener('click', () => showLocationOnMap(report.location.lat, report.location.lng));
+            }
+            
+            return element;
+        }
+
+        // Upvote a report
+        function upvoteReport(reportId) {
+            // In a real app, you might want to track users who voted to prevent multiple votes
+            const reportRef = database.ref(`reports/${reportId}`);
+            
+            reportRef.transaction(report => {
+                if (report) {
+                    if (!report.votes) {
+                        report.votes = 0;
+                    }
+                    report.votes += 1;
+                }
+                return report;
+            });
+        }
+
+        // Mark report as solved
+        function markReportAsSolved(reportId) {
+            if (!currentAdminUser) return;
+            
+            if (!confirm('Are you sure you want to mark this report as solved?')) {
+                return;
+            }
+            
+            showLoading(true);
+            
+            const updates = {
+                status: 'solved',
+                solvedAt: new Date().toISOString(),
+                solvedBy: `${currentAdminUser.name} (${currentAdminUser.type})`
+            };
+            
+            database.ref(`reports/${reportId}`).update(updates)
+                .then(() => {
+                    loadReports();
+                })
+                .catch(error => {
+                    console.error('Error solving report:', error);
+                    alert('Failed to mark report as solved');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        // Delete report
+        function deleteReport(reportId) {
+            if (!confirm('Are you sure you want to delete this report?')) return;
+            
+            showLoading(true);
+            
+            database.ref(`reports/${reportId}`).remove()
+                .then(() => {
+                    loadReports();
+                })
+                .catch(error => {
+                    console.error('Error deleting report:', error);
+                    alert('Failed to delete report');
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        // Get icon for incident type
+        function getIncidentIcon(type) {
+            switch(type) {
+                case 'vehicle-collision': return 'fa-car-crash';
+                case 'hit-and-run': return 'fa-running';
+                case 'traffic-jam': return 'fa-traffic-light';
+                case 'illegal-checkpoint': return 'fa-road-barrier';
+                case 'reckless-driving': return 'fa-car-burst';
+                case 'drunk-driving': return 'fa-wine-glass';
+                case 'faulty-traffic-light': return 'fa-traffic-light';
+                case 'road-sign-damage': return 'fa-sign';
+                default: return 'fa-circle-exclamation';
+            }
+        }
+
+        // Format incident type for display
+        function formatIncidentType(type) {
+            return type.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Set up navigation
+        function setupNavigation() {
+            document.querySelectorAll('.nav-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const screenId = button.getAttribute('data-screen');
+                    
+                    // If trying to access admin dashboard without being logged in, show login instead
+                    if (screenId === 'admin-dashboard-screen' && !auth.currentUser) {
+                        showScreen('admin-login-screen');
+                        return;
+                    }
+                    
+                    // If reporter tries to access admin screens, redirect to home
+                    if (currentRole === 'reporter' && (screenId === 'admin-login-screen' || screenId === 'admin-dashboard-screen' || screenId === 'admin-signup-screen')) {
+                        showScreen('home-screen');
+                        return;
+                    }
+                    
+                    showScreen(screenId);
+                    
+                    // Update active state
+                    document.querySelectorAll('.nav-btn').forEach(btn => 
+                        btn.classList.remove('active'));
+                    button.classList.add('active');
+                });
+            });
+            
+            // Refresh button in admin dashboard
+            if (refreshReportsBtn) {
+                refreshReportsBtn.addEventListener('click', loadReports);
+            }
+        }
+
+        // Set up admin authentication
+        function setupAdminAuth() {
+            // Admin login
+            if (adminLoginBtn) {
+                adminLoginBtn.addEventListener('click', () => {
+                    const email = document.getElementById('admin-email').value;
+                    const password = document.getElementById('admin-password').value;
+                    
+                    if (!email || !password) {
+                        document.getElementById('admin-login-error').textContent = 'Please enter email and password';
+                        return;
+                    }
+                    
+                    showLoading(true);
+                    
+                    auth.signInWithEmailAndPassword(email, password)
+                        .then((userCredential) => {
+                            loadAdminUserData(userCredential.user.uid);
+                            showScreen('admin-dashboard-screen');
+                            document.getElementById('header-actions').style.display = 'flex';
+                        })
+                        .catch(error => {
+                            document.getElementById('admin-login-error').textContent = error.message;
+                        })
+                        .finally(() => {
+                            showLoading(false);
+                        });
+                });
+            }
+            
+            // Admin signup
+            if (adminSignupBtn) {
+                adminSignupBtn.addEventListener('click', () => {
+                    const email = document.getElementById('signup-email').value;
+                    const password = document.getElementById('signup-password').value;
+                    const name = document.getElementById('signup-name').value;
+                    const badge = document.getElementById('signup-badge').value;
+                    const type = document.querySelector('.admin-type-btn.active')?.getAttribute('data-type');
+                    
+                    if (!type) {
+                        document.getElementById('admin-signup-error').textContent = 'Please select service type';
+                        return;
+                    }
+                    
+                    if (!email || !password || !name || !badge) {
+                        document.getElementById('admin-signup-error').textContent = 'Please fill all fields';
+                        return;
+                    }
+                    
+                    if (password.length < 6) {
+                        document.getElementById('admin-signup-error').textContent = 'Password must be at least 6 characters';
+                        return;
+                    }
+                    
+                    showLoading(true);
+                    
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .then((userCredential) => {
+                            return database.ref(`admins/${userCredential.user.uid}`).set({
+                                type: type,
+                                name: name,
+                                email: email,
+                                badgeNumber: badge,
+                                createdAt: new Date().toISOString()
+                            });
+                        })
+                        .then(() => {
+                            document.getElementById('admin-signup-success').textContent = 'Registration successful!';
+                            setTimeout(() => {
+                                showScreen('admin-login-screen');
+                            }, 2000);
+                        })
+                        .catch(error => {
+                            document.getElementById('admin-signup-error').textContent = error.message;
+                        })
+                        .finally(() => {
+                            showLoading(false);
+                        });
+                });
+            }
+            
+            // Admin logout
+            if (adminLogoutBtn) {
+                adminLogoutBtn.addEventListener('click', () => {
+                    showLoading(true);
+                    auth.signOut()
+                        .then(() => {
+                            currentAdminUser = null;
+                            showScreen('admin-login-screen');
+                            document.getElementById('header-actions').style.display = 'none';
+                        })
+                        .finally(() => {
+                            showLoading(false);
+                        });
+                });
+            }
+            
+            // Show signup/login links
+            document.getElementById('show-signup').addEventListener('click', (e) => {
+                e.preventDefault();
+                showScreen('admin-signup-screen');
+            });
+            
+            document.getElementById('show-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                showScreen('admin-login-screen');
+            });
+        }
+
+        // Set up map modal
+        function setupMapModal() {
+            document.getElementById('modal-close').addEventListener('click', closeModal);
+            
+            // Close modal when clicking outside
+            document.getElementById('map-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Show location on map in modal
+        function showLocationOnMap(lat, lng) {
+            const modal = document.getElementById('map-modal');
+            const modalMapContainer = document.getElementById('modal-map');
+            
+            // Show modal
+            modal.style.display = 'flex';
+            
+            // Initialize map if not already done
+            if (!window.modalMap) {
+                window.modalMap = L.map(modalMapContainer).setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(window.modalMap);
+            } else {
+                window.modalMap.setView([lat, lng], 15);
+            }
+            
+            // Clear existing markers and add new one
+            if (window.modalMarker) {
+                window.modalMap.removeLayer(window.modalMarker);
+            }
+            window.modalMarker = L.marker([lat, lng]).addTo(window.modalMap)
+                .bindPopup(`Report Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+                .openPopup();
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('map-modal').style.display = 'none';
+        }
+
+        // Load admin user data
+        function loadAdminUserData(userId) {
+            database.ref(`admins/${userId}`).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        currentAdminUser = snapshot.val();
+                        
+                        // Update UI with admin info
+                        document.getElementById('admin-welcome').textContent = 
+                            `Welcome, ${currentAdminUser.name}`;
+                        
+                        // Set admin type badge
+                        const badge = document.getElementById('admin-type-badge');
+                        badge.textContent = currentAdminUser.type.charAt(0).toUpperCase() + 
+                                           currentAdminUser.type.slice(1);
+                        badge.className = 'admin-badge';
+                        
+                        if (currentAdminUser.type === 'police') {
+                            badge.classList.add('police-badge');
+                        } else if (currentAdminUser.type === 'hospital') {
+                            badge.classList.add('hospital-badge');
+                        } else if (currentAdminUser.type === 'firefighter') {
+                            badge.classList.add('firefighter-badge');
+                        }
+                    }
+                });
+        }
+
+        // Show screen
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            currentScreen = screenId;
+            
+            // Load appropriate data when screen changes
+            if (screenId === 'home-screen' || screenId === 'admin-dashboard-screen') {
+                loadReports();
+            }
+            
+            // Initialize map when report screen is shown
+            if (screenId === 'report-screen' && !map) {
+                initMap();
+            }
+        }
+
+        // Show loading overlay
+        function showLoading(show) {
+            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        // Handle auth state changes
+        auth.onAuthStateChanged(user => {
+            if (user && currentRole === 'admin' && (currentScreen === 'admin-login-screen' || currentScreen === 'admin-signup-screen')) {
+                loadAdminUserData(user.uid);
+                showScreen('admin-dashboard-screen');
+                document.getElementById('header-actions').style.display = 'flex';
+            } else if (!user && currentRole === 'admin' && currentScreen === 'admin-dashboard-screen') {
+                showScreen('admin-login-screen');
+                currentAdminUser = null;
+                document.getElementById('header-actions').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
