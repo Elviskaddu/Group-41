@@ -6,7 +6,7 @@ Uganda Road misuse Alert system: Your Road Safety Companion
 This system helps drivers, pedestrians, and emergency services stay informed about road incidents in real-time. Whether you're reporting a pothole, an accident, or checking for hazards on your route, this platform keeps Uganda's roads safer for everyone.
 
 
- Who Can Use It? Download the app(https://median.co/share/wzkqdj#apk)
+ Who Can Use It? 
 1.  Regular Users (Public) 
    - Report road issues you encounter  
    - View and verify other reports  
@@ -17,7 +17,7 @@ This system helps drivers, pedestrians, and emergency services stay informed abo
    - Mark incidents as resolved  
    - Coordinate responses efficiently  
 
-How to Use It
+How to Use It .Download the app(https://median.co/share/wzkqdj#apk)
 
 1. Getting Started
 - Choose your role when you first open the app:  
